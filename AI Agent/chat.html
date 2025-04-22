@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+  <meta charset="UTF-8" />
+  <title>任务对话助手</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: 'Segoe UI', 'PingFang SC', sans-serif;
+      background: #f4f6f8;
+      height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      transition: background-color 0.3s, color 0.3s;
+    }
+
+    .dark-mode {
+      background-color: #1e1e1e;
+      color: #f0f0f0;
+    }
+
+    .chat-container {
+      width: 90%;
+      max-width: 600px;
+      background: #ffffff;
+      padding: 1rem;
+      border-radius: 16px;
+      box-shadow: 0 8px 30px rgba(0, 0, 0, 0.1);
+      display: flex;
+      flex-direction: column;
+      height: 85vh;
+    }
+
+    h1 {
+      margin: 0 0 1rem 0;
+      text-align: center;
+      font-size: 1.6rem;
+    }
+
+    #chatArea {
+      flex: 1;
+      overflow-y: auto;
+      padding: 1rem;
+      background: #f7f9fb;
+      border-radius: 10px;
+      margin-bottom: 1rem;
+    }
+
+    .bubble {
+      max-width: 80%;
+      padding: 0.75rem 1rem;
+      border-radius: 12px;
+      margin-bottom: 0.6rem;
+      line-height: 1.5;
+      white-space: pre-wrap;
+    }
+
+    .user-msg {
+      align-self: flex-end;
+      background: #dcf8c6;
+    }
+
+    .bot-msg {
+      align-self: flex-start;
+      background: #f0f0f0;
+    }
+
+    .input-area {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    #chatInput {
+      flex: 1;
+      padding: 0.75rem 1rem;
+      font-size: 1rem;
+      border-radius: 10px;
+      border: 1px solid #ccc;
+      resize: none;
+    }
+
+    .send-btn {
+      padding: 0.75rem 1.2rem;
+      font-size: 1rem;
+      border: none;
+      border-radius: 10px;
+      cursor: pointer;
+      background: linear-gradient(to right, #4CAF50, #2e7d32);
+      color: white;
+    }
+
+    .send-btn:hover {
+      opacity: 0.9;
+    }
+
+    #switchBtn {
+      position: absolute;
+      top: 16px;
+      right: 16px;
+      background: linear-gradient(to right, #6a11cb, #2575fc);
+      color: white;
+      border: none;
+      padding: 0.5rem 1rem;
+      font-size: 0.9rem;
+      border-radius: 8px;
+      cursor: pointer;
+      z-index: 1000;
+    }
+
+    #switchBtn:hover {
+      opacity: 0.9;
+    }
+
+    .toast {
+      position: fixed;
+      bottom: 30px;
+      right: 30px;
+      background-color: #323232;
+      color: #fff;
+      padding: 0.8rem 1.2rem;
+      border-radius: 8px;
+      font-size: 0.95rem;
+      opacity: 0;
+      transform: translateY(20px);
+      transition: opacity 0.5s ease, transform 0.5s ease;
+      z-index: 999;
+    }
+
+    .toast.show {
+      opacity: 1;
+      transform: translateY(0);
+    }
+    .background-decoration {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: -1;
+      overflow: hidden;
+      background: linear-gradient(to bottom right, #e0f7fa, #fce4ec);
+    }
+
+    .background-decoration::before,
+    .background-decoration::after {
+      content: '';
+      position: absolute;
+      border-radius: 50%;
+      opacity: 0.3;
+      animation: float 8s ease-in-out infinite;
+    }
+
+    .background-decoration::before {
+      width: 200px;
+      height: 200px;
+      background: radial-gradient(circle, #80deea, transparent);
+      top: 10%;
+      left: 15%;
+      animation-delay: 0s;
+    }
+
+    .background-decoration::after {
+      width: 300px;
+      height: 300px;
+      background: radial-gradient(circle, #f48fb1, transparent);
+      bottom: 15%;
+      right: 10%;
+      animation-delay: 4s;
+    }
+
+    @keyframes float {
+      0%, 100% {
+        transform: translateY(0px) scale(1);
+      }
+      50% {
+        transform: translateY(-20px) scale(1.05);
+      }
+    }
+
+    /* 暗色适配 */
+    .dark-mode .background-decoration {
+      background: linear-gradient(to bottom right, #1c1c2b, #232323);
+    }
+
+    .dark-mode .background-decoration::before {
+      background: radial-gradient(circle, #4fc3f7, transparent);
+    }
+    .dark-mode .background-decoration::after {
+      background: radial-gradient(circle, #ba68c8, transparent);
+    }
+
+  </style>
+</head>
+<body>
+  <button id="switchBtn" onclick="location.href='form.html'">🔁 切换为表单模式</button>
+  <div class="background-decoration"></div>
+  <div class="chat-container">
+    <h1>💬 任务对话助手</h1>
+    <div id="chatArea"></div>
+
+    <div class="input-area">
+      <textarea id="chatInput" placeholder="请输入任务...按 Enter 或点击发送" rows="1"></textarea>
+      <button class="send-btn" onclick="sendMessage()">发送</button>
+    </div>
+  </div>
+
+  <div id="toast" class="toast"></div>
+
+  <script>
+    function showToast(message) {
+      const toast = document.getElementById("toast");
+      toast.textContent = message;
+      toast.classList.add("show");
+      setTimeout(() => toast.classList.remove("show"), 3000);
+    }
+
+    function appendMessage(text, sender = "bot") {
+      const chat = document.getElementById("chatArea");
+      const bubble = document.createElement("div");
+      bubble.className = `bubble ${sender === "user" ? "user-msg" : "bot-msg"}`;
+      bubble.innerText = text;
+      chat.appendChild(bubble);
+      chat.scrollTop = chat.scrollHeight;
+    }
+
+    async function sendMessage() {
+      const input = document.getElementById("chatInput");
+      const text = input.value.trim();
+      if (!text) return;
+
+      appendMessage(text, "user");
+      input.value = "";
+      showToast("🧠 正在优化中...");
+      appendMessage("🧠 正在分析中，请稍等...", "bot");
+
+      try {
+        const res = await fetch("http://localhost:5000/optimize", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ text })
+        });
+
+        const data = await res.json();
+        document.querySelectorAll(".bot-msg").forEach(el => {
+          if (el.innerText.includes("正在分析")) el.remove();
+        });
+        appendMessage(data.result || "没有返回内容", "bot");
+      } catch (e) {
+        appendMessage("❌ 请求失败：" + e.message, "bot");
+      }
+    }
+
+    // 支持按 Enter 键发送（Shift+Enter 换行）
+    document.getElementById("chatInput").addEventListener("keydown", function (e) {
+      if (e.key === "Enter" && !e.shiftKey) {
+        e.preventDefault();
+        sendMessage();
+      }
+    });
+  </script>
+</body>
+</html>
